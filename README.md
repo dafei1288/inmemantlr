@@ -383,6 +383,40 @@ code:
 // load generic parser from file /tmp/gp.out
 GenericParser gp = GenericParser.load("/tmp/gp.out");
 ```
+## Compiler Options Builder
+
+You can control the options passed to the in-memory Java compiler via `CompilerOptionsBuilder`.
+
+- JDK 9+: prefer `--release`. The builder removes any `-source/-target` and keeps `--release` as the single source of truth.
+- JDK 8 and below: `--release` is not available; the builder falls back to `-source/-target`.
+- Classpath: call `buildClasspath("path")` repeatedly to append. It recognizes synonymous flags (`-classpath`, `-cp`, `--class-path`, `--classpath`) and appends to whichever is present; when adding a new one it normalizes to `-classpath`.
+
+Example:
+
+```java
+import org.snt.inmemantlr.GenericParser;
+import org.snt.inmemantlr.comp.CompilerOptionsBuilder;
+import org.snt.inmemantlr.comp.CompilerOptionsProvider;
+
+GenericParser gp = new GenericParser(new File("MyGrammar.g4"));
+
+CompilerOptionsBuilder b = CompilerOptionsBuilder.builder()
+        .buildRelease("11")              // on JDK 9+; falls back to -source/-target on JDK 8
+        .buildClasspath("/path/to/lib1")
+        .buildClasspath("/path/to/lib2");
+
+CompilerOptionsProvider provider = b.toProvider();
+
+gp.setCompilerOptionsProvider(provider);
+gp.compile();
+```
+
+Notes:
+- The builder joins multiple classpath entries using the platform path separator (`;` on Windows, `:` on Unix-like systems).
+- Avoid mixing `--release` with `-source/-target`; the builder enforces this on JDK 9+.
+
+
+
 
 ## grammars-v4
 
@@ -419,3 +453,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
